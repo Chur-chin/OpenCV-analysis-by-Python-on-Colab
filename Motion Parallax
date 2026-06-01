@@ -1,0 +1,53 @@
+# ==================== 그래프 부분 (Colab에서 잘 보이게 수정) ====================
+plt.figure(figsize=(13, 8))
+
+# 패널 표면 Feature 움직임
+panel_displacements = []
+max_len = 0
+
+for traj in trajectories.values():
+    if len(traj) > 8:
+        base_x, base_y = traj[0][1], traj[0][2]
+        disp = [np.hypot(p[1] - base_x, p[2] - base_y) for p in traj]
+        panel_displacements.append(disp)
+        max_len = max(max_len, len(disp))
+
+if panel_displacements:
+    padded = [np.pad(d, (0, max_len - len(d)), mode='edge') for d in panel_displacements]
+    avg_panel = np.mean(padded, axis=0)
+    plt.plot(avg_panel, label='LCD Panel Surface Features (Average)', 
+             linewidth=2.8, color='blue')
+
+# SPOT 움직임
+if spot_data:
+    spot_dict = defaultdict(list)
+    for f, x, y, b in spot_data:
+        spot_dict[f].append((x, y))
+    
+    spot_disp = []
+    base_x = base_y = None
+    for f in sorted(spot_dict.keys()):
+        points = spot_dict[f]
+        if points:
+            cx = np.mean([p[0] for p in points])
+            cy = np.mean([p[1] for p in points])
+            if base_x is None:
+                base_x, base_y = cx, cy
+            spot_disp.append(np.hypot(cx - base_x, cy - base_y))
+    
+    if spot_disp:
+        plt.plot(spot_disp, label='SPOT / Fringe Light Leakage', 
+                linewidth=3.8, color='red', marker='o', markersize=4)
+
+plt.title('Motion Parallax Analysis\nFixed Camera + Moving LCD Panel\nEvidence of Out-of-Plane Light Leakage', 
+          fontsize=15)
+plt.xlabel('Analyzed Frame Number', fontsize=13)
+plt.ylabel('Cumulative Displacement (pixels)', fontsize=13)
+plt.legend(fontsize=12)
+plt.grid(True, alpha=0.7)
+
+# 저장 및 표시
+plt.savefig('motion_parallax_analysis.png', dpi=400, bbox_inches='tight')
+plt.show()
+
+print("\n✅ 그래프가 저장되었습니다: motion_parallax_analysis.png")
