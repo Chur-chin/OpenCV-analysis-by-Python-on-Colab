@@ -1,0 +1,138 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# =========================
+# 파일명
+# =========================
+
+video_path = "20260523_014253.mp4"
+
+# =========================
+# 비디오 읽기
+# =========================
+
+cap = cv2.VideoCapture(video_path)
+
+fps = cap.get(cv2.CAP_PROP_FPS)
+
+moire_activity = []
+
+prev_gray = None
+
+frame_count = 0
+
+while True:
+
+    ret, frame = cap.read()
+
+    if not ret:
+        break
+
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # 크기 축소 (속도 향상)
+    gray = cv2.resize(gray, None, fx=0.5, fy=0.5)
+
+    if prev_gray is not None:
+
+        # Optical Flow 계산
+        flow = cv2.calcOpticalFlowFarneback(
+            prev_gray,
+            gray,
+            None,
+            0.5,
+            3,
+            15,
+            3,
+            5,
+            1.2,
+            0
+        )
+
+        magnitude = np.sqrt(
+            flow[...,0]**2 +
+            flow[...,1]**2
+        )
+
+        # 평균 이동량
+        activity = np.mean(magnitude)
+
+        moire_activity.append(activity)
+
+    prev_gray = gray.copy()
+
+    frame_count += 1
+
+cap.release()
+
+print("Frames analyzed:", frame_count)
+print("FPS:", fps)
+
+# =========================
+# Activity 그래프
+# =========================
+
+plt.figure(figsize=(12,5))
+
+plt.plot(
+    moire_activity,
+    color='red',
+    linewidth=2
+)
+
+plt.title("Moire Activity")
+plt.xlabel("Frame")
+plt.ylabel("Optical Flow Magnitude")
+plt.grid(True)
+
+plt.show()
+
+# =========================
+# FFT
+# =========================
+
+signal = np.array(moire_activity)
+
+signal = signal - np.mean(signal)
+
+fft_vals = np.fft.fft(signal)
+
+freqs = np.fft.fftfreq(
+    len(signal),
+    d=1/fps
+)
+
+mask = freqs > 0
+
+positive_freqs = freqs[mask]
+positive_fft = np.abs(fft_vals[mask])
+
+# =========================
+# FFT 그래프
+# =========================
+
+plt.figure(figsize=(12,5))
+
+plt.plot(
+    positive_freqs,
+    positive_fft
+)
+
+plt.title("FFT Spectrum of Moire Activity")
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Amplitude")
+plt.grid(True)
+
+plt.show()
+
+# =========================
+# 주요 주파수
+# =========================
+
+peak_idx = np.argmax(positive_fft)
+
+dominant_freq = positive_freqs[peak_idx]
+
+print()
+print("Dominant Frequency =", dominant_freq, "Hz")
