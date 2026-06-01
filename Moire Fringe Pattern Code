@@ -1,0 +1,96 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from collections import defaultdict
+
+video_files = [
+    '20260523_014253.mp4',
+    '20260523_004141.mp4'
+]
+
+for video_path in video_files:
+    if not os.path.exists(video_path):
+        print(f"❌ 파일 없음: {video_path}")
+        continue
+    
+    print(f"\n{'='*70}")
+    print(f"🎬 Moire Fringe 분석 시작: {video_path}")
+    print(f"{'='*70}")
+    
+    cap = cv2.VideoCapture(video_path)
+    ret, old_frame = cap.read()
+    if not ret:
+        print("첫 프레임 읽기 실패")
+        continue
+    
+    old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
+    frame_idx = 0
+    SKIP = 3
+    flow_magnitudes = []
+    spot_data = []
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if frame_idx % SKIP != 0:
+            frame_idx += 1
+            continue
+            
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        # Dense Optical Flow (Moire에 더 적합)
+        flow = cv2.calcOpticalFlowFarneback(old_gray, frame_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+        magnitude, _ = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+        flow_magnitudes.append(np.mean(magnitude))
+        
+        # 밝은 Moire Fringe 영역 검출
+        _, thresh = cv2.threshold(frame_gray, 140, 255, cv2.THRESH_BINARY)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        for cnt in contours:
+            if cv2.contourArea(cnt) > 20:  # 작은 noise 제외
+                M = cv2.moments(cnt)
+                if M["m00"] != 0:
+                    cx = int(M["m10"]/M["m00"])
+                    cy = int(M["m01"]/M["m00"])
+                    spot_data.append((frame_idx, cx, cy, frame_gray[cy, cx]))
+        
+        old_gray = frame_gray.copy()
+        frame_idx += 1
+
+    cap.release()
+
+    print(f"분석 완료 - 총 분석 프레임: {len(flow_magnitudes)}")
+    print(f"검출된 Moire/Fringe 포인트: {len(spot_data)} 개")
+
+    # ==================== 그래프 ====================
+    plt.figure(figsize=(14, 8))
+    plt.plot(flow_magnitudes, label='Average Optical Flow Magnitude (Moire Movement)', color='blue', linewidth=2)
+    
+    if spot_data:
+        spot_dict = defaultdict(list)
+        for f, x, y, b in spot_data:
+            spot_dict[f].append((x, y))
+        
+        spot_disp = []
+        base = None
+        for f in sorted(spot_dict.keys()):
+            pts = spot_dict[f]
+            cx = np.mean([p[0] for p in pts])
+            cy = np.mean([p[1] for p in pts])
+            if base is None:
+                base = (cx, cy)
+            spot_disp.append(np.hypot(cx - base[0], cy - base[1]))
+        
+        plt.plot(spot_disp, label='Moire Fringe Displacement', color='red', linewidth=2.5)
+
+    plt.title(f'Moire Fringe Motion Analysis\n{video_path}')
+    plt.xlabel('Analyzed Frame')
+    plt.ylabel('Movement Intensity / Displacement')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(video_path.replace('.mp4', '_moire_analysis.png'), dpi=300)
+    plt.show()
+    
+    print(f"✅ Moire 분석 그래프 저장 완료\n")
