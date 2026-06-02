@@ -1,0 +1,27 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter
+
+def simulate_moire(cell_positions, grating):
+    h, w = grating.shape
+    moire = np.zeros((h, w))
+    
+    for cy, cx in cell_positions:
+        # Simple cell model (circle with internal texture)
+        y, x = np.mgrid[0:h, 0:w]
+        r = np.sqrt((y-cy)**2 + (x-cx)**2)
+        cell = np.exp(-(r-25)**2 / (2*15**2))  # Gaussian cell
+        moire += cell * grating
+    
+    moire = gaussian_filter(moire, sigma=2)
+    return moire
+
+# 예시 실행
+grating = generate_honeycomb_serpentine()
+cells = [(400, 300), (600, 700), (300, 800)]
+moire_img = simulate_moire(cells, grating)
+
+plt.figure(figsize=(10,5))
+plt.subplot(1,2,1); plt.imshow(grating, cmap='gray'); plt.title("Honeycomb-Serpentine")
+plt.subplot(1,2,2); plt.imshow(moire_img, cmap='viridis'); plt.title("Moire Fringe on Cells")
+plt.show()
