@@ -1,0 +1,19 @@
+import cv2
+import numpy as np
+from scipy.fft import fft2, ifft2, fftshift
+
+def demodulate_moire(image, filter_radius=30):
+    # 2D FFT
+    f = fftshift(fft2(image))
+    # Simple band-pass around center (실제로는 Moire carrier frequency 찾아야 함)
+    h, w = f.shape
+    y, x = np.ogrid[-h//2:h//2, -w//2:w//2]
+    mask = x**2 + y**2 < filter_radius**2
+    f_filtered = f * mask
+    
+    # Inverse FFT
+    demod = np.abs(ifft2(fftshift(f_filtered)))
+    return demod
+
+# 사용 예
+# processed = demodulate_moire(moire_img)
