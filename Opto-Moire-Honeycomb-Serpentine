@@ -15,3 +15,6 @@ Opto-Moire-Honeycomb-Serpentine/
 ├── docs/
 │   └── physics_background.md
 └── LICENSE
+Opto-Moire-Honeycomb-Serpentine
+Low-resource, smartphone-compatible optical platform using Honeycomb-Serpentine structure for label-free immune cell morphology enhancement via Moire fringe and polarized light.
+Goal: Create a fundamental optical platform that bridges physics and immunology, inspired by Shimon Sakaguchi's work on regulatory T cells.
