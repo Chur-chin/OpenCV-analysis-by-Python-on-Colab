@@ -1,0 +1,17 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def generate_honeycomb_serpentine(shape=(1024, 1024), period=40, serpentine_amp=5):
+    y, x = np.mgrid[0:shape[0], 0:shape[1]]
+    # Hexagonal honeycomb
+    hex_pattern = np.cos(2*np.pi/period * (x + y*0.5)) * np.cos(2*np.pi/period * (y * np.sqrt(3)/2))
+    # Serpentine modulation
+    serp = serpentine_amp * np.sin(2*np.pi/80 * x)
+    pattern = np.sin(hex_pattern + serp)
+    return (pattern > 0).astype(float)
+
+# 사용 예
+pattern = generate_honeycomb_serpentine()
+plt.imshow(pattern, cmap='gray')
+plt.title("Honeycomb-Serpentine Grating")
+plt.show()
