@@ -1,0 +1,17 @@
+Opto-Moire-Honeycomb-Serpentine/
+├── README.md
+├── optics_setup/
+│   ├── setup_diagram.png
+│   └── components_list.md
+├── simulation/
+│   ├── honeycomb_generator.py
+│   ├── moire_simulation.py
+│   └── polarized_moire_sim.py
+├── analysis/
+│   ├── moire_demodulation.py
+│   └── cell_segmentation.py
+├── data/
+│   └── sample_images/
+├── docs/
+│   └── physics_background.md
+└── LICENSE
